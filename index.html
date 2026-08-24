@@ -47,8 +47,30 @@
     background: #1c1512;
     color: #e8d9c9;
   }
-  input[type="number"]:disabled {
+  input[type="number"]:disabled, select:disabled {
     color: #8a7563;
+  }
+  .timeout-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .timeout-row input[type="number"] {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  select {
+    padding: 8px 10px;
+    font-size: 1rem;
+    border: 1px solid #4a382e;
+    border-radius: 8px;
+    background: #1c1512;
+    color: #e8d9c9;
+  }
+  p.hint {
+    color: #8a7563;
+    font-size: 0.78rem;
+    margin: 0 0 16px 0;
   }
   button {
     width: 100%;
@@ -82,6 +104,16 @@
   <label for="interval">Interval between plays (seconds)</label>
   <input type="number" id="interval" value="6" min="0.5" step="0.5">
 
+  <label for="timeout">Stop automatically after</label>
+  <div class="timeout-row">
+    <input type="number" id="timeout" value="1" min="0" step="1">
+    <select id="timeoutUnit">
+      <option value="minutes">minutes</option>
+      <option value="hours" selected>hours</option>
+    </select>
+  </div>
+  <p class="hint">Set to 0 for no automatic stop.</p>
+
   <button id="startBtn">Start</button>
   <button id="stopBtn" disabled>Stop</button>
 
@@ -107,11 +139,14 @@
   // -----------------------------------------
 
   const intervalInput = document.getElementById("interval");
+  const timeoutInput = document.getElementById("timeout");
+  const timeoutUnit = document.getElementById("timeoutUnit");
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
   const status = document.getElementById("status");
 
   let timerId = null;
+  let stopTimeoutId = null;
   const audio = new Audio();
 
   function playRandomSound() {
@@ -129,19 +164,42 @@
       status.textContent = "Please enter a valid interval greater than 0.";
       return;
     }
+
+    const timeoutValue = parseFloat(timeoutInput.value);
+    if (isNaN(timeoutValue) || timeoutValue < 0) {
+      status.textContent = "Please enter a valid timeout (0 or greater).";
+      return;
+    }
+
     playRandomSound(); // play immediately on start
     timerId = setInterval(playRandomSound, seconds * 1000);
+
+    if (timeoutValue > 0) {
+      const unitMs = timeoutUnit.value === "hours" ? 3600000 : 60000;
+      const timeoutMs = timeoutValue * unitMs;
+      stopTimeoutId = setTimeout(() => {
+        stop();
+        status.textContent = `Stopped automatically after ${timeoutValue} ${timeoutUnit.value}.`;
+      }, timeoutMs);
+    }
+
     startBtn.disabled = true;
     stopBtn.disabled = false;
     intervalInput.disabled = true;
+    timeoutInput.disabled = true;
+    timeoutUnit.disabled = true;
   }
 
   function stop() {
     clearInterval(timerId);
+    clearTimeout(stopTimeoutId);
     timerId = null;
+    stopTimeoutId = null;
     startBtn.disabled = false;
     stopBtn.disabled = true;
     intervalInput.disabled = false;
+    timeoutInput.disabled = false;
+    timeoutUnit.disabled = false;
     status.textContent = "Stopped.";
   }
 
