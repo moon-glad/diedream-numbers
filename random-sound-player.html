@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Random Sound Player</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 480px;
+    margin: 60px auto;
+    padding: 24px;
+    background: #1c1512;
+    color: #e8d9c9;
+  }
+  h1 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+    color: #f0dcc4;
+  }
+  p.sub {
+    color: #a68b74;
+    margin-top: 0;
+    font-size: 0.9rem;
+  }
+  .card {
+    background: #2a201b;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    border: 1px solid #3a2c24;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #d9c2a8;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 1rem;
+    border: 1px solid #4a382e;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+    background: #1c1512;
+    color: #e8d9c9;
+  }
+  input[type="number"]:disabled {
+    color: #8a7563;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  #startBtn { background: #b5561f; color: #fff3e6; }
+  #startBtn:disabled { background: #5c3f2c; color: #a68b74; cursor: default; }
+  #stopBtn { background: #3a2c24; color: #d9c2a8; }
+  #stopBtn:disabled { background: #2a201b; color: #6b584a; cursor: default; }
+  #status {
+    margin-top: 14px;
+    font-size: 0.9rem;
+    color: #b39a82;
+    min-height: 1.2em;
+  }
+  #status strong { color: #f0dcc4; }
+</style>
+</head>
+<body>
+
+<h1>Random Sound Player</h1>
+<p class="sub">Plays a random file from the list below on a timer.</p>
+
+<div class="card">
+  <label for="interval">Interval between plays (seconds)</label>
+  <input type="number" id="interval" value="6" min="0.5" step="0.5">
+
+  <button id="startBtn">Start</button>
+  <button id="stopBtn" disabled>Stop</button>
+
+  <div id="status">Stopped.</div>
+</div>
+
+<script>
+  // ---- Configure your sound files here ----
+  // AudioMNIST naming convention: {digit}_{speakerID}_{repetition}.wav
+  // e.g. https://github.com/soerenab/AudioMNIST/tree/master/data/52 -> 1_52_0.wav, 1_52_1.wav, ... 9_52_49.wav
+  // Adjust folder, speakerId, digits, and repetitions to match the files you actually have.
+  const soundFolder = "sounds";      // folder containing the audio files, relative to this HTML file
+  const speakerId = "52";            // matching the actual filenames (e.g. "52")
+  const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9]; // no 0
+  const repetitions = Array.from({ length: 50 }, (_, i) => i); // 0-49
+
+  const soundFiles = [];
+  for (const digit of digits) {
+    for (const rep of repetitions) {
+      soundFiles.push(`${soundFolder}/${digit}_${speakerId}_${rep}.wav`);
+    }
+  }
+  // -----------------------------------------
+
+  const intervalInput = document.getElementById("interval");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const status = document.getElementById("status");
+
+  let timerId = null;
+  const audio = new Audio();
+
+  function playRandomSound() {
+    const file = soundFiles[Math.floor(Math.random() * soundFiles.length)];
+    audio.src = file;
+    audio.play().catch(err => {
+      status.innerHTML = `Error playing <strong>${file}</strong>: ${err.message}`;
+    });
+    status.innerHTML = `Playing: <strong>${file}</strong>`;
+  }
+
+  function start() {
+    const seconds = parseFloat(intervalInput.value);
+    if (isNaN(seconds) || seconds <= 0) {
+      status.textContent = "Please enter a valid interval greater than 0.";
+      return;
+    }
+    playRandomSound(); // play immediately on start
+    timerId = setInterval(playRandomSound, seconds * 1000);
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    intervalInput.disabled = true;
+  }
+
+  function stop() {
+    clearInterval(timerId);
+    timerId = null;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    intervalInput.disabled = false;
+    status.textContent = "Stopped.";
+  }
+
+  startBtn.addEventListener("click", start);
+  stopBtn.addEventListener("click", stop);
+</script>
+
+</body>
+</html>
